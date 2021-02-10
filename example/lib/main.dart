@@ -16,7 +16,7 @@ class _MyAppState extends State<MyApp> {
   List<WifiP2pDevice> _wifiP2pDevices = [];
 
   void _listen() {
-    _wifiP2PManager.discoveryStream().asBroadcastStream().listen(
+    _wifiP2PManager.discoveryStream().listen(
       (wifiP2pDevice) {
         print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac);
         if (!_wifiP2pDevices.contains(wifiP2pDevice)) {
@@ -27,6 +27,24 @@ class _MyAppState extends State<MyApp> {
           _wifiP2pDevices = _wifiP2pDevices;
         });
       }
+    );
+
+    _wifiP2PManager.wifiStateStream().listen(
+      (state) => print(state)
+    );
+
+    _wifiP2PManager.wifiP2pConnectionStream().listen(
+      (wifiP2pInfo) {
+        print(
+          'groupFormed: ${wifiP2pInfo.groupFormed}, ' + 
+          'groupOwnerAddress: ${wifiP2pInfo.groupOwnerAddress}, ' + 
+          'isGroupOwner: ${wifiP2pInfo.isGroupOwner}'
+        );
+      }
+    );
+
+    _wifiP2PManager.thisDeviceChangeStream().listen(
+      (wifiP2pDevice) => print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac)
     );
   }
 
