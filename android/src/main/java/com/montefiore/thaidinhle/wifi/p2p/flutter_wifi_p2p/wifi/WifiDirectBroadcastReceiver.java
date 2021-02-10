@@ -39,6 +39,7 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
+            Log.d(TAG, "onReceive(): STATE_CHANGED");
             int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
             // if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED)
         } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
@@ -48,10 +49,10 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
                 wifiP2pManager.requestPeers(channel, peerListListener);
             }
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
-    
+            Log.d(TAG, "onReceive(): CONNECTION_CHANGED");
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
+            Log.d(TAG, "onReceive(): THIS_DEVICE_CHANGED");
             // (WifiP2pDevice) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
-    
         }
     }
 

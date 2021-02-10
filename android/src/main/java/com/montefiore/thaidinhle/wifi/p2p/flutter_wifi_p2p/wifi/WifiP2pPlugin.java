@@ -3,6 +3,7 @@ package com.montefiore.thaidinhle.wifi.p2p.flutter_wifi_p2p.wifi;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
+import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.util.Log;
@@ -22,10 +23,9 @@ import static android.os.Looper.getMainLooper;
 public class WifiP2pPlugin {
     private static final String TAG = "[FlutterWifiP2P][WifiP2pPlugin]";
 
-    public static final int DISCOVERY_TIME = 10000;
-
     private Channel channel;
     private Context context;
+    private WifiDirectBroadcastReceiver broadcastReceiver;
     private WifiP2pManager wifiP2pManager;
 
     public WifiP2pPlugin(Context context) {
@@ -51,31 +51,58 @@ public class WifiP2pPlugin {
         // Indicates this device's details have changed.
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
     
-        context.registerReceiver(
-            new WifiDirectBroadcastReceiver(channel, mapNameEventSink, wifiP2pManager),
-            intentFilter
-        );
+        broadcastReceiver = new WifiDirectBroadcastReceiver(channel, mapNameEventSink, wifiP2pManager);
+
+        context.registerReceiver(broadcastReceiver, intentFilter);
     }
 
-    public void discovery() {
+    public void unregister() {
+        context.unregisterReceiver(broadcastReceiver);
+    }
+
+    public void startDiscovery() {
         wifiP2pManager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Log.d(TAG, "discovery(): success");
+                Log.d(TAG, "startDiscovery(): success");
             }
 
             @Override
             public void onFailure(int reasonCode) {
-                Log.d(TAG, "discovery(): failure -> " + errorCode(reasonCode));
+                Log.d(TAG, "startDiscovery(): failure -> " + errorCode(reasonCode));
             }
         });
+    }
 
-        new Timer().schedule(new TimerTask() {
+    public void stopDiscovery() {
+        wifiP2pManager.stopPeerDiscovery(channel, new WifiP2pManager.ActionListener() {
             @Override
-            public void run() {
-
+            public void onSuccess() {
+                Log.d(TAG, "stopDiscovery(): success");
             }
-        }, DISCOVERY_TIME);
+
+            @Override
+            public void onFailure(int reason) {
+                Log.e(TAG, "stopDiscovery(): failure -> " + errorCode(reason));
+            }
+        });
+    }
+
+    public void connect(final String remoteAddress) {
+        final WifiP2pConfig config = new WifiP2pConfig();
+        config.deviceAddress = remoteAddress.toLowerCase();
+
+        wifiP2pManager.connect(channel, config, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "connect(): success");
+            }
+
+            @Override
+            public void onFailure(int reasonCode) {
+                Log.e(TAG, "connect(): failure -> " + errorCode(reasonCode));
+            }
+        });
     }
 
     private String errorCode(int reasonCode) {

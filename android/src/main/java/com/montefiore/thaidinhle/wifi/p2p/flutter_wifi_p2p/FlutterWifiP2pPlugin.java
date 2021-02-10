@@ -55,10 +55,12 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
         break;
 
       case "discovery":
-        wifiP2pPlugin.discovery();
+        wifiP2pPlugin.startDiscovery();
         break;
 
       case "connect":
+        final String remoteAddress = call.arguments();
+        wifiP2pPlugin.connect(remoteAddress);
         break;
 
       case "removeGroup":
@@ -69,7 +71,7 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
 
       case "closeServerSocket":
         break;
-    
+
       default:
         result.notImplemented();
     }
@@ -82,6 +84,8 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
       eventChannel.setStreamHandler(null);
     }
 
+    wifiP2pPlugin.stopDiscovery();
+    wifiP2pPlugin.unregister();
     channel.setMethodCallHandler(null);
   }
 

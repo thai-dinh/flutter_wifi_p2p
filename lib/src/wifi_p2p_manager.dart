@@ -13,13 +13,17 @@ class WifiP2PManager {
 
   WifiP2PManager();
 
-  Future<void> initialize() async => await _chMain.invokeMethod('initialize');
-
-  Future<void> discovery() async => await _chMain.invokeMethod('discovery');
-
   Stream<WifiP2pDevice> discoveryStream() async* {
     await for (Map map in _chDiscovery.receiveBroadcastStream()) {
       yield WifiP2pDevice.fromMap(map);
     } 
+  }
+
+  Future<void> initialize() async => await _chMain.invokeMethod('initialize');
+
+  Future<void> discovery() async => await _chMain.invokeMethod('discovery');
+
+  Future<void> connect(final String remoteAddress) async {
+    await _chMain.invokeMethod('connect', remoteAddress);
   }
 }
