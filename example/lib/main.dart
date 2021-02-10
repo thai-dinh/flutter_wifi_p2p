@@ -42,27 +42,27 @@ class _MyAppState extends State<MyApp> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Card(
-              child: Center(
-                child: ListTile(
-                  title: Text('Initialize'),
-                  onTap: _wifiP2PManager.initialize,
-                ),
+              child: ListTile(
+                title: Center(child: Text('Initialize')),
+                onTap: _wifiP2PManager.initialize,
               ),
             ),
             Card(
-              child: Center(
-                child: ListTile(
-                  title: Text('Listen'),
-                  onTap: _listen,
-                ),
+              child: ListTile(
+                title: Center(child: Text('Listen')),
+                onTap: _listen,
               ),
             ),
             Card(
-              child: Center(
-                child: ListTile(
-                  title: Text('Discovery'),
-                  onTap: _wifiP2PManager.discovery,
-                ),
+              child: ListTile(
+                title: Center(child: Text('Discovery')),
+                onTap: _wifiP2PManager.discovery,
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: Center(child: Text('Disconnect')),
+                onTap: _wifiP2PManager.removeGroup,
               ),
             ),
             Expanded(

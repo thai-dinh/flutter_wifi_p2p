@@ -26,4 +26,6 @@ class WifiP2PManager {
   Future<void> connect(final String remoteAddress) async {
     await _chMain.invokeMethod('connect', remoteAddress);
   }
+
+  Future<void> removeGroup() async => await _chMain.invokeMethod('removeGroup');
 }

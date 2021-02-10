@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.util.Log;
@@ -101,6 +102,27 @@ public class WifiP2pPlugin {
             @Override
             public void onFailure(int reasonCode) {
                 Log.e(TAG, "connect(): failure -> " + errorCode(reasonCode));
+            }
+        });
+    }
+
+    public void removeGroup() {
+        wifiP2pManager.requestGroupInfo(channel, new WifiP2pManager.GroupInfoListener() {
+            @Override
+            public void onGroupInfoAvailable(WifiP2pGroup group) {
+                if (group != null) {
+                    wifiP2pManager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "removeGroup(): success");
+                        }
+
+                        @Override
+                        public void onFailure(int reason) {
+                            Log.e(TAG, "removeGroup(): failure -> " + errorCode(reason));
+                        }
+                    });
+                }
             }
         });
     }

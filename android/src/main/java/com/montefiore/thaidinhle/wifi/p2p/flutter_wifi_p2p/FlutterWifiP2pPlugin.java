@@ -64,6 +64,7 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
         break;
 
       case "removeGroup":
+        wifiP2pPlugin.removeGroup();
         break;
 
       case "openServerSocket":
