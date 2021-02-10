@@ -14,32 +14,14 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  WifiP2PManager _wifiP2PManager = WifiP2PManager();
 
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = await FlutterWifiP2p.platformVersion;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
+  void _listen() {
+    _wifiP2PManager.discoveryStream().asBroadcastStream().listen(
+      (wifiP2pDevice) {
+        print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac);
+      }
+    );
   }
 
   @override
@@ -47,10 +29,31 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Wifi P2P for Flutter example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  RaisedButton(
+                    child: Text('Initialize'),
+                    onPressed: _wifiP2PManager.initialize,
+                  ),
+                  RaisedButton(
+                    child: Text('Listen'),
+                    onPressed: _listen,
+                  ),
+                  RaisedButton(
+                    child: Text('Discovery'),
+                    onPressed: _wifiP2PManager.discovery,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
