@@ -47,9 +47,11 @@ class _MyAppState extends State<MyApp> {
 
         if (wifiP2pInfo.isGroupOwner) {
           _groupOwnerIp = _ownIp = wifiP2pInfo.groupOwnerAddress;
+          setState(() => _ownIp = _ownIp);
         } else {
           _groupOwnerIp = wifiP2pInfo.groupOwnerAddress;
           _ownIp = await _wifiP2PManager.getOwnIp();
+          setState(() => _ownIp = _ownIp);
         }
       }
     );
@@ -67,14 +69,20 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _writeToClient() async {
+    _wifiP2pServer.write('Server $_ownIp: Hello world!', '192.168.49.200');
+  }
+
   void _connectClient() async {
     _wifiP2pClient = WifiP2pClient(_groupOwnerIp, _port);
     await _wifiP2pClient.connect();
     _wifiP2pClient.listen((data) {
       print(new String.fromCharCodes(data).trim());
     });
-    _wifiP2pClient.write('Hello world!');
-    _wifiP2pClient.close();
+  }
+
+  void _writeToServer() async {
+    _wifiP2pClient.write('Client $_ownIp: Hello world!');
   }
 
   @override
@@ -93,49 +101,51 @@ class _MyAppState extends State<MyApp> {
                 title: Center(child: Text('Own IP: $_ownIp')),
               ),
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Initialize')),
-                onTap: _wifiP2PManager.initialize,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Initialize')),
+              onPressed: _wifiP2PManager.initialize,
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Listen')),
-                onTap: _listen,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Listen')),
+              onPressed: _listen,
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Discovery')),
-                onTap: _wifiP2PManager.discovery,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Discovery')),
+              onPressed: _wifiP2PManager.discovery,
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Open server')),
-                onTap: _serverStartListening,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Open server')),
+              onPressed: _serverStartListening,
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Connect client')),
-                onTap: _connectClient,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Write to client')),
+              onPressed: _writeToClient,
             ),
-            Card(
-              child: ListTile(
-                title: Center(child: Text('Disconnect')),
-                onTap: _wifiP2PManager.removeGroup,
-              ),
+            RaisedButton(
+              child: Center(child: Text('Connect client')),
+              onPressed: _connectClient,
+            ),
+            RaisedButton(
+              child: Center(child: Text('Write to server')),
+              onPressed: _writeToServer,
+            ),
+            RaisedButton(
+              child: Center(child: Text('Disconnect')),
+              onPressed: () async {
+                if (_wifiP2pClient != null)
+                  await _wifiP2pClient.close();
+                if (_wifiP2pServer != null)
+                  await _wifiP2pServer.closeServer();
+                await _wifiP2PManager.removeGroup();
+              },
             ),
             Expanded(
               child: ListView(
                 children: _wifiP2pDevices.map((device) {
                   return Card(
                     child: ListTile(
-                      title: Text(device.name),
-                      subtitle: Text(device.mac),
+                      title: Center(child: Text(device.name)),
+                      subtitle: Center(child: Text(device.mac)),
                       onTap: () {
                         print("Connect to device: ${device.mac}");
                         _wifiP2PManager.connect(device.mac);

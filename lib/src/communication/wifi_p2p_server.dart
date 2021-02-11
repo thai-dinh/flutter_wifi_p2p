@@ -11,6 +11,7 @@ class WifiP2pServer {
   HashMap<String, StreamSubscription<Uint8List>> _mapIpStream;
   HashMap<String, Socket> _mapIpSocket;
   ServerSocket _serverSocket;
+  StreamSubscription<Socket> _streamSub;
 
   WifiP2pServer(this._hostIp, this._port) {
     _mapIpStream = HashMap();
@@ -19,14 +20,19 @@ class WifiP2pServer {
 
   int get port => _port;
 
+  HashMap<String, Socket> get mapIpSocket => _mapIpSocket;
+
   Future<void> openServer() async {
-    _serverSocket = await ServerSocket.bind(_hostIp, _port);
+    _serverSocket = await ServerSocket.bind(_hostIp, _port, shared: true);
   }
 
-  Future<void> closeServer() async => await _serverSocket.close();
+  Future<void> closeServer() async {
+    await _streamSub.cancel();
+    await _serverSocket.close();
+  }
 
   void listen(void Function(Uint8List) onData) {
-    _serverSocket.listen((socket) {
+    _streamSub = _serverSocket.listen((socket) {
       String remoteAddress = socket.remoteAddress.address;
       _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
       _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
@@ -39,7 +45,7 @@ class WifiP2pServer {
 
   Future<void> closeClient(String remoteAddress) async {
     await _mapIpStream[remoteAddress].cancel();
-    await _mapIpSocket[remoteAddress].close();
+    _mapIpSocket[remoteAddress].destroy();
     _mapIpSocket.remove(remoteAddress);
     _mapIpStream.remove(remoteAddress);
   }
