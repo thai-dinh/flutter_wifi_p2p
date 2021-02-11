@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_wifi_p2p/flutter_wifi_p2p.dart';
@@ -74,7 +77,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _writeToClient() async {
-    _wifiP2pServer.write('Server $_ownIp: Hello world!', '192.168.49.200');
+    HashMap<String, Socket> _mapIpSocket = _wifiP2pServer.mapIpSocket;
+    _mapIpSocket.forEach((ip, socket) {
+      _wifiP2pServer.write('Server $_ownIp: Hello world!', ip);
+    });
   }
 
   void _connectClient() async {

@@ -12,11 +12,15 @@ class WifiP2pClient {
 
   WifiP2pClient(this._serverIp, this._port);
 
+/*------------------------------Getters & Setters-----------------------------*/
+
   int get port => _port;
 
   Socket get socket => _socket;
 
   String get remoteAddress => _socket.remoteAddress.address;
+
+/*-------------------------------Public methods-------------------------------*/
 
   Future<void> connect() async {
     _socket = await Socket.connect(_serverIp, _port);
@@ -27,21 +31,28 @@ class WifiP2pClient {
     _socket.destroy();
   }
 
-  void listen(void Function(Uint8List) onData) async {
+  Future<void> listen(void Function(Uint8List) onData) async {
     try {
-      _streamSub = _socket.listen(
-        onData,
-        onError: (error) async {
-          print('onError: ' + error.toString());
-          await close();
-          return;
-        },
-        onDone: () async => await close()
-      );
+      await _listen(onData);
     } on SocketException catch (error) {
-      print('catch: ' + error.toString());
+      print(error.toString());
+      await close();
     }
   }
 
-  void write(String message) => _socket.write(message);
+  Future<void> write(String message) async {
+    try {
+      _socket.write(message);
+    } catch (error) {
+      await close();
+    }
+  }
+
+/*------------------------------Private methods-------------------------------*/
+
+  Future<void> _listen(void Function(Uint8List) onData) async {
+    _streamSub = _socket.listen(
+      onData, onError: (error) => throw error, onDone: () async => await close()
+    );
+  }
 }

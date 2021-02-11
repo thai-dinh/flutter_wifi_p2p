@@ -18,9 +18,13 @@ class WifiP2pServer {
     _mapIpSocket = HashMap();
   }
 
+/*------------------------------Getters & Setters-----------------------------*/
+
   int get port => _port;
 
   HashMap<String, Socket> get mapIpSocket => _mapIpSocket;
+
+/*-------------------------------Public methods-------------------------------*/
 
   Future<void> openServer() async {
     _serverSocket = await ServerSocket.bind(_hostIp, _port, shared: true);
@@ -29,24 +33,31 @@ class WifiP2pServer {
   Future<void> closeServer() async {
     await _streamSub.cancel();
 
-    _mapIpSocket.forEach((ipAddress, socket) {
-      socket.destroy();
-    });
+    _mapIpSocket.forEach((ipAddress, socket) => socket.destroy());
+    _mapIpSocket.clear();
 
     _serverSocket = await _serverSocket.close();
     _serverSocket = null;
   }
 
-  void listen(void Function(Uint8List) onData) {
-    _streamSub = _serverSocket.listen((socket) {
-      String remoteAddress = socket.remoteAddress.address;
-      _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
-      _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
-    });
+  Future<void> listen(void Function(Uint8List) onData) async {
+    try {
+      await _listen(onData);
+    } on SocketException catch (error) {
+      print(error.toString());
+      _mapIpSocket.remove(error.address.address);
+      _mapIpStream.remove(error.address.address);
+    } catch (error) {
+      print('here');
+    }
   }
 
-  void write(String message, String remoteAddress) {
-    _mapIpSocket[remoteAddress].write(message);
+  Future<void> write(String message, String remoteAddress) async {
+    try {
+      _mapIpSocket[remoteAddress].write(message);
+    } catch (error) {
+      await closeClient(remoteAddress);
+    }
   }
 
   Future<void> closeClient(String remoteAddress) async {
@@ -54,5 +65,19 @@ class WifiP2pServer {
     _mapIpSocket[remoteAddress].destroy();
     _mapIpSocket.remove(remoteAddress);
     _mapIpStream.remove(remoteAddress);
+  }
+
+/*------------------------------Private methods-------------------------------*/
+
+  Future<void> _listen(void Function(Uint8List) onData) async {
+    _streamSub = _serverSocket.listen(
+      (socket) {
+        String remoteAddress = socket.remoteAddress.address;
+        _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
+        _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
+      },
+      onError: (error) => throw error,
+      onDone: () async => await closeServer()
+    );
   }
 }

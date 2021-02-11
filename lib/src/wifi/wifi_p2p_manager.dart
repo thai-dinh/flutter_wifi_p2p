@@ -20,6 +20,8 @@ class WifiP2PManager {
 
   WifiP2PManager();
 
+/*------------------------------Getters & Setters-----------------------------*/
+
   Stream<WifiP2pDevice> get discoveryStream async* {
     await for (Map map in _chDiscovery.receiveBroadcastStream()) {
       yield WifiP2pDevice.fromMap(map);
@@ -43,6 +45,8 @@ class WifiP2PManager {
       yield WifiP2pDevice.fromMap(map);
     }
   }
+
+/*-------------------------------Public methods-------------------------------*/
 
   Future<void> initialize() async => await _chMain.invokeMethod('initialize');
 
