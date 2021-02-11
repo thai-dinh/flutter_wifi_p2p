@@ -27,8 +27,20 @@ class WifiP2pClient {
     _socket.destroy();
   }
 
-  void listen(void Function(Uint8List) onData) {
-    _streamSub = _socket.listen(onData);
+  void listen(void Function(Uint8List) onData) async {
+    try {
+      _streamSub = _socket.listen(
+        onData,
+        onError: (error) async {
+          print('onError: ' + error.toString());
+          await close();
+          return;
+        },
+        onDone: () async => await close()
+      );
+    } on SocketException catch (error) {
+      print('catch: ' + error.toString());
+    }
   }
 
   void write(String message) => _socket.write(message);

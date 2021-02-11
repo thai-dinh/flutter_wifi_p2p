@@ -28,7 +28,13 @@ class WifiP2pServer {
 
   Future<void> closeServer() async {
     await _streamSub.cancel();
-    await _serverSocket.close();
+
+    _mapIpSocket.forEach((ipAddress, socket) {
+      socket.destroy();
+    });
+
+    _serverSocket = await _serverSocket.close();
+    _serverSocket = null;
   }
 
   void listen(void Function(Uint8List) onData) {

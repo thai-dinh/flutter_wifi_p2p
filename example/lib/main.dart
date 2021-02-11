@@ -19,6 +19,8 @@ class _MyAppState extends State<MyApp> {
 
   String _ownIp;
   String _groupOwnerIp;
+  bool _isGroupFormed = false;
+  bool _isGroupOwner = false;
   int _port = 4444;
 
   void _listen() {
@@ -45,7 +47,9 @@ class _MyAppState extends State<MyApp> {
           'isGroupOwner: ${wifiP2pInfo.isGroupOwner}'
         );
 
-        if (wifiP2pInfo.isGroupOwner) {
+        _isGroupFormed = wifiP2pInfo.groupFormed;
+        _isGroupOwner = wifiP2pInfo.isGroupOwner;
+        if (_isGroupOwner) {
           _groupOwnerIp = _ownIp = wifiP2pInfo.groupOwnerAddress;
           setState(() => _ownIp = _ownIp);
         } else {
@@ -115,19 +119,39 @@ class _MyAppState extends State<MyApp> {
             ),
             RaisedButton(
               child: Center(child: Text('Open server')),
-              onPressed: _serverStartListening,
+              onPressed: () {
+                if (_isGroupFormed && _isGroupOwner) 
+                  _serverStartListening();
+                else 
+                  return;
+              },
             ),
             RaisedButton(
-              child: Center(child: Text('Write to client')),
-              onPressed: _writeToClient,
+              child: Center(child: Text('Write to client(s)')),
+              onPressed: () {
+                if (_isGroupFormed && _isGroupOwner)
+                  _writeToClient();
+                else
+                  return;
+              },
             ),
             RaisedButton(
-              child: Center(child: Text('Connect client')),
-              onPressed: _connectClient,
+              child: Center(child: Text('Connect to server')),
+              onPressed: () {
+                if (_isGroupFormed && !_isGroupOwner)
+                  _connectClient();
+                else
+                  return;
+              },
             ),
             RaisedButton(
               child: Center(child: Text('Write to server')),
-              onPressed: _writeToServer,
+              onPressed: () {
+                if (_isGroupFormed && !_isGroupOwner)
+                  _writeToServer();
+                else
+                  return;
+              },
             ),
             RaisedButton(
               child: Center(child: Text('Disconnect')),
