@@ -13,39 +13,68 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   WifiP2PManager _wifiP2PManager = WifiP2PManager();
+  WifiP2pServer _wifiP2pServer;
+  WifiP2pClient _wifiP2pClient;
   List<WifiP2pDevice> _wifiP2pDevices = [];
 
+  String _ownIp;
+  String _groupOwnerIp;
+  int _port = 4444;
+
   void _listen() {
-    _wifiP2PManager.discoveryStream().listen(
+    _wifiP2PManager.discoveryStream.listen(
       (wifiP2pDevice) {
         print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac);
         if (!_wifiP2pDevices.contains(wifiP2pDevice)) {
           _wifiP2pDevices.add(wifiP2pDevice);
         }
 
-        setState(() {
-          _wifiP2pDevices = _wifiP2pDevices;
-        });
+        setState(() => _wifiP2pDevices = _wifiP2pDevices);
       }
     );
 
-    _wifiP2PManager.wifiStateStream().listen(
+    _wifiP2PManager.wifiStateStream.listen(
       (state) => print(state)
     );
 
-    _wifiP2PManager.wifiP2pConnectionStream().listen(
-      (wifiP2pInfo) {
+    _wifiP2PManager.wifiP2pConnectionStream.listen(
+      (wifiP2pInfo) async {
         print(
           'groupFormed: ${wifiP2pInfo.groupFormed}, ' + 
           'groupOwnerAddress: ${wifiP2pInfo.groupOwnerAddress}, ' + 
           'isGroupOwner: ${wifiP2pInfo.isGroupOwner}'
         );
+
+        if (wifiP2pInfo.isGroupOwner) {
+          _groupOwnerIp = _ownIp = wifiP2pInfo.groupOwnerAddress;
+        } else {
+          _groupOwnerIp = wifiP2pInfo.groupOwnerAddress;
+          _ownIp = await _wifiP2PManager.getOwnIp();
+        }
       }
     );
 
-    _wifiP2PManager.thisDeviceChangeStream().listen(
+    _wifiP2PManager.thisDeviceChangeStream.listen(
       (wifiP2pDevice) => print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac)
     );
+  }
+
+  void _serverStartListening() async {
+    _wifiP2pServer = WifiP2pServer(_ownIp, _port);
+    await _wifiP2pServer.openServer();
+    _wifiP2pServer.listen((data) {
+      print(new String.fromCharCodes(data).trim());
+    });
+  }
+
+  void _connectClient() async {
+    _wifiP2pClient = WifiP2pClient(_groupOwnerIp, _port);
+    await _wifiP2pClient.connect();
+    _wifiP2pClient.listen((data) {
+      print(new String.fromCharCodes(data).trim());
+    });
+    _wifiP2pClient.write('Hello world!');
+    _wifiP2pClient.close();
   }
 
   @override
@@ -59,6 +88,11 @@ class _MyAppState extends State<MyApp> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
+            Card(
+              child: ListTile(
+                title: Center(child: Text('Own IP: $_ownIp')),
+              ),
+            ),
             Card(
               child: ListTile(
                 title: Center(child: Text('Initialize')),
@@ -75,6 +109,18 @@ class _MyAppState extends State<MyApp> {
               child: ListTile(
                 title: Center(child: Text('Discovery')),
                 onTap: _wifiP2PManager.discovery,
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: Center(child: Text('Open server')),
+                onTap: _serverStartListening,
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: Center(child: Text('Connect client')),
+                onTap: _connectClient,
               ),
             ),
             Card(

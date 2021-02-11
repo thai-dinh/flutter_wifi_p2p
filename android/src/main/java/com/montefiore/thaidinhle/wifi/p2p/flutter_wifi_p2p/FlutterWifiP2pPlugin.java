@@ -43,13 +43,14 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
 
     mapNameEventChannel = new HashMap<String, EventChannel>();
     mapNameEventSink = new HashMap<String, EventSink>();
+
+    initChannels(messenger);
   }
 
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
       case "initialize":
-        initChannels(messenger);
         wifiP2pPlugin.register(mapNameEventSink);
         result.success(null);
         break;
@@ -65,12 +66,6 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
 
       case "removeGroup":
         wifiP2pPlugin.removeGroup();
-        break;
-
-      case "openServerSocket":
-        break;
-
-      case "closeServerSocket":
         break;
 
       default:

@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_wifi_p2p/src/wifi_p2p_device.dart';
-import 'package:flutter_wifi_p2p/src/wifi_p2p_info.dart';
+import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_device.dart';
+import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_info.dart';
 
 
 class WifiP2PManager {
@@ -19,25 +20,25 @@ class WifiP2PManager {
 
   WifiP2PManager();
 
-  Stream<WifiP2pDevice> discoveryStream() async* {
+  Stream<WifiP2pDevice> get discoveryStream async* {
     await for (Map map in _chDiscovery.receiveBroadcastStream()) {
       yield WifiP2pDevice.fromMap(map);
     }
   }
 
-  Stream<bool> wifiStateStream() async* {
+  Stream<bool> get wifiStateStream async* {
     await for (bool state in _chWifiState.receiveBroadcastStream()) {
       yield state;
     }
   }
 
-  Stream<WifiP2pInfo> wifiP2pConnectionStream() async* {
+  Stream<WifiP2pInfo> get wifiP2pConnectionStream async* {
     await for (Map map in _chConnection.receiveBroadcastStream()) {
       yield WifiP2pInfo.fromMap(map);
     }
   }
 
-  Stream<WifiP2pDevice> thisDeviceChangeStream() async* {
+  Stream<WifiP2pDevice> get thisDeviceChangeStream async* {
     await for (Map map in _chChange.receiveBroadcastStream()) {
       yield WifiP2pDevice.fromMap(map);
     }
@@ -52,4 +53,14 @@ class WifiP2PManager {
   }
 
   Future<void> removeGroup() async => await _chMain.invokeMethod('removeGroup');
+
+  Future<String> getOwnIp() async {
+    String ipAddress;
+    for (NetworkInterface interface in await NetworkInterface.list()) {
+      if (interface.name.compareTo('p2p-wlan0-0') == 0)
+        ipAddress = interface.addresses.first.address;
+    }
+
+    return ipAddress;
+  }
 }

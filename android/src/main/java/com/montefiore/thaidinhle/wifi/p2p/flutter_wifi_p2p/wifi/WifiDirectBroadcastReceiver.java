@@ -42,48 +42,57 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
-        if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
-            Log.d(TAG, "onReceive(): STATE_CHANGED");
-
-            EventSink eventSink = mapNameEventSink.get("STATE_CHANGED");
-            int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
-            // if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
-            //     eventSink.success(true);
-            // } else {
-            //     eventSink.success(false);
-            // }
-        } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
-            Log.d(TAG, "onReceive(): PEERS_CHANGED");
-
-            if (wifiP2pManager != null) {
-                wifiP2pManager.requestPeers(channel, peerListListener);
-            }
-        } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
-            Log.d(TAG, "onReceive(): CONNECTION_CHANGED");
-
-            ConnectivityManager connectivityManager = 
-                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            connectivityManager.registerDefaultNetworkCallback(
-                new NetworkCallback() {
-                    @Override
-                    public void onAvailable(Network network) {
-                        Log.d(TAG, "onAvailable(): CONNECTION_CHANGED");
-                        wifiP2pManager.requestConnectionInfo(channel, connectionInfoListener);
-                    }
+        switch (action) {
+            case WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION: {
+                Log.d(TAG, "onReceive(): STATE_CHANGED");
+                EventSink eventSink = mapNameEventSink.get("STATE_CHANGED");
+                if (eventSink == null) {
+                    return;
                 }
-            );
-        } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
-            Log.d(TAG, "onReceive(): THIS_DEVICE_CHANGED");
+    
+                int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
+                if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
+                    eventSink.success(true);
+                } else {
+                    eventSink.success(false);
+                }
+                break;
+            }
+            
+            case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION: {
+                Log.d(TAG, "onReceive(): PEERS_CHANGED");
+                if (wifiP2pManager != null) {
+                    wifiP2pManager.requestPeers(channel, peerListListener);
+                }
+                break;
+            }
 
-            WifiP2pDevice wifiP2pDevice = 
-                (WifiP2pDevice) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
+            case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION: {
+                Log.d(TAG, "onReceive(): CONNECTION_CHANGED");
+                wifiP2pManager.requestConnectionInfo(channel, connectionInfoListener);
+                break;
+            }
 
-            HashMap<String, Object> mapInfoValue = new HashMap<>();
-            mapInfoValue.put("name", wifiP2pDevice.deviceName);
-            mapInfoValue.put("mac", wifiP2pDevice.deviceAddress.toUpperCase());
+            case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION: {
+                Log.d(TAG, "onReceive(): THIS_DEVICE_CHANGED");
+                WifiP2pDevice wifiP2pDevice = 
+                    (WifiP2pDevice) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
+    
+                HashMap<String, Object> mapInfoValue = new HashMap<>();
+                mapInfoValue.put("name", wifiP2pDevice.deviceName);
+                mapInfoValue.put("mac", wifiP2pDevice.deviceAddress.toUpperCase());
+    
+                EventSink eventSink = mapNameEventSink.get("THIS_DEVICE_CHANGED");
+                if (eventSink == null) {
+                    return;
+                }
+    
+                eventSink.success(mapInfoValue);
+                break;
+            }
 
-            EventSink eventSink = mapNameEventSink.get("THIS_DEVICE_CHANGED");
-            eventSink.success(mapInfoValue);
+            default:
+                break;
         }
     }
 
@@ -104,6 +113,10 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
                     mapInfoValue.put("mac", wifiP2pDevice.deviceAddress.toUpperCase());
     
                     EventSink eventSink = mapNameEventSink.get("PEERS_CHANGED");
+                    if (eventSink == null) {
+                        return;
+                    }
+
                     eventSink.success(mapInfoValue);
                 }
             }
@@ -116,11 +129,19 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             Log.d(TAG, "onConnectionInfoAvailable");
 
             HashMap<String, Object> mapInfoValue = new HashMap<>();
-            mapInfoValue.put("groupFormed", info.groupFormed);
-            mapInfoValue.put("groupOwnerAddress", info.groupOwnerAddress);
-            mapInfoValue.put("isGroupOwner", info.isGroupOwner);
-
             EventSink eventSink = mapNameEventSink.get("CONNECTION_CHANGED");
+            if (eventSink == null) {
+                return;
+            }
+
+            mapInfoValue.put("groupFormed", info.groupFormed);
+            mapInfoValue.put("isGroupOwner", info.isGroupOwner);
+            if (info.groupFormed) {
+                mapInfoValue.put("groupOwnerAddress", info.groupOwnerAddress.getHostAddress());
+            } else {
+                mapInfoValue.put("groupOwnerAddress", "null");
+            }
+
             eventSink.success(mapInfoValue);
         }
     };
