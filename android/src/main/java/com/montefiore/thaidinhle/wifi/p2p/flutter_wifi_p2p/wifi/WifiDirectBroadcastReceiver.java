@@ -28,7 +28,6 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
     private boolean verbose;
     private Channel channel;
     private HashMap<String, EventSink> mapNameEventSink;
-    private List<WifiP2pDevice> peers;
     private WifiP2pManager wifiP2pManager;
 
     public WifiDirectBroadcastReceiver(
@@ -38,7 +37,6 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
         this.channel = channel;
         this.mapNameEventSink = mapNameEventSink;
         this.wifiP2pManager = wifiP2pManager;
-        this.peers = new ArrayList<WifiP2pDevice>();
     }
 
     public void setVerbose(boolean verbose) {
@@ -109,25 +107,20 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             if (verbose) Log.d(TAG, "onPeersAvailable()");
 
             List<WifiP2pDevice> refreshedPeers = new ArrayList<>(peerList.getDeviceList());
-            if (!refreshedPeers.equals(peers)) {
-                peers.clear();
-                peers.addAll(refreshedPeers);
-                
-                List<HashMap<String, Object>> listPeers = new ArrayList<>();
-                for (WifiP2pDevice wifiP2pDevice : refreshedPeers) {
-                    HashMap<String, Object> mapInfoValue = new HashMap<>();
-                    mapInfoValue.put("name", wifiP2pDevice.deviceName);
-                    mapInfoValue.put("mac", wifiP2pDevice.deviceAddress.toUpperCase());
-                    listPeers.add(mapInfoValue);
-                }
-
-                EventSink eventSink = mapNameEventSink.get("PEERS_CHANGED");
-                if (eventSink == null) {
-                    return;
-                }
-
-                eventSink.success(listPeers);
+            List<HashMap<String, Object>> listPeers = new ArrayList<>();
+            for (WifiP2pDevice wifiP2pDevice : refreshedPeers) {
+                HashMap<String, Object> mapInfoValue = new HashMap<>();
+                mapInfoValue.put("name", wifiP2pDevice.deviceName);
+                mapInfoValue.put("mac", wifiP2pDevice.deviceAddress.toUpperCase());
+                listPeers.add(mapInfoValue);
             }
+
+            EventSink eventSink = mapNameEventSink.get("PEERS_CHANGED");
+            if (eventSink == null) {
+                return;
+            }
+
+            eventSink.success(listPeers);
         }
     };
 

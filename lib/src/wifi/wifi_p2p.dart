@@ -63,7 +63,7 @@ class FlutterWifiP2p {
     }
 
     if (permission)
-      await _chMain.invokeMethod('discovery');
+      _chMain.invokeMethod('discovery');
   }
 
   Future<void> connect(final String remoteAddress) async {
