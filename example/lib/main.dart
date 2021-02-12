@@ -1,6 +1,3 @@
-import 'dart:collection';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'package:flutter_wifi_p2p/flutter_wifi_p2p.dart';
@@ -15,11 +12,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  WifiP2PManager _wifiP2PManager = WifiP2PManager();
-  WifiP2pServer _wifiP2pServer;
-  WifiP2pClient _wifiP2pClient;
-  List<WifiP2pDevice> _wifiP2pDevices = [];
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  FlutterWifiP2p _flutterWifiP2p = FlutterWifiP2p();
+  List<WifiP2pDevice> _listDevices = [];
+  P2pServerSocket _serverSocket;
+  P2pClientSocket _clientSocket;
   String _ownIp;
   String _groupOwnerIp;
   bool _isGroupFormed = false;
@@ -27,22 +25,22 @@ class _MyAppState extends State<MyApp> {
   int _port = 4444;
 
   void _listen() {
-    _wifiP2PManager.discoveryStream.listen(
-      (wifiP2pDevice) {
-        print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac);
-        if (!_wifiP2pDevices.contains(wifiP2pDevice)) {
-          _wifiP2pDevices.add(wifiP2pDevice);
-        }
+    _flutterWifiP2p.verbose = true;
+    _flutterWifiP2p.discoveryStream.listen(
+      (devices) {
+        devices.forEach(
+          (device) => print(device.name + ', ' + device.mac)
+        );
 
-        setState(() => _wifiP2pDevices = _wifiP2pDevices);
+        setState(() => _listDevices = devices);
       }
     );
 
-    _wifiP2PManager.wifiStateStream.listen(
-      (state) => print(state)
+    _flutterWifiP2p.wifiStateStream.listen(
+      (state) => print('Wifi state: $state')
     );
 
-    _wifiP2PManager.wifiP2pConnectionStream.listen(
+    _flutterWifiP2p.wifiP2pConnectionStream.listen(
       (wifiP2pInfo) async {
         print(
           'groupFormed: ${wifiP2pInfo.groupFormed}, ' + 
@@ -57,48 +55,60 @@ class _MyAppState extends State<MyApp> {
           setState(() => _ownIp = _ownIp);
         } else {
           _groupOwnerIp = wifiP2pInfo.groupOwnerAddress;
-          _ownIp = await _wifiP2PManager.getOwnIp();
+          _ownIp = await _flutterWifiP2p.getOwnIp();
           setState(() => _ownIp = _ownIp);
         }
       }
     );
 
-    _wifiP2PManager.thisDeviceChangeStream.listen(
+    _flutterWifiP2p.thisDeviceChangeStream.listen(
       (wifiP2pDevice) => print(wifiP2pDevice.name + ', ' + wifiP2pDevice.mac)
     );
   }
 
   void _serverStartListening() async {
-    _wifiP2pServer = WifiP2pServer(_ownIp, _port);
-    await _wifiP2pServer.openServer();
-    _wifiP2pServer.listen((data) {
-      print(new String.fromCharCodes(data).trim());
+    _serverSocket = P2pServerSocket(_ownIp, _port);
+    await _serverSocket.openServer();
+    _serverSocket.listen((data) {
+      _displayMessage(new String.fromCharCodes(data).trim());
     });
   }
 
   void _writeToClient() async {
-    HashMap<String, Socket> _mapIpSocket = _wifiP2pServer.mapIpSocket;
-    _mapIpSocket.forEach((ip, socket) {
-      _wifiP2pServer.write('Server $_ownIp: Hello world!', ip);
-    });
+    List<String> activeConnection = _serverSocket.activeConnection;
+    activeConnection.forEach(
+      (ip) => _serverSocket.write(
+        'Server $_ownIp: Hello world!', remoteAddress: ip
+      )
+    );
   }
 
-  void _connectClient() async {
-    _wifiP2pClient = WifiP2pClient(_groupOwnerIp, _port);
-    await _wifiP2pClient.connect();
-    _wifiP2pClient.listen((data) {
-      print(new String.fromCharCodes(data).trim());
+  void _connectToServer() async {
+    _clientSocket = P2pClientSocket(_groupOwnerIp, _port);
+    await _clientSocket.connect(1000);
+    _clientSocket.listen((data) {
+      _displayMessage(new String.fromCharCodes(data).trim());
     });
   }
 
   void _writeToServer() async {
-    _wifiP2pClient.write('Client $_ownIp: Hello world!');
+    _clientSocket.write('Client $_ownIp: Hello world!');
+  }
+
+  void _displayMessage(final String message) {
+    _scaffoldKey.currentState.showSnackBar(
+      SnackBar(
+        content: Center(child: Text(message)),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
+        key: _scaffoldKey,
         appBar: AppBar(
           title: const Text('Wifi P2P for Flutter example app'),
         ),
@@ -112,8 +122,8 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             RaisedButton(
-              child: Center(child: Text('Initialize')),
-              onPressed: _wifiP2PManager.initialize,
+              child: Center(child: Text('Register')),
+              onPressed: _flutterWifiP2p.register,
             ),
             RaisedButton(
               child: Center(child: Text('Listen')),
@@ -121,7 +131,7 @@ class _MyAppState extends State<MyApp> {
             ),
             RaisedButton(
               child: Center(child: Text('Discovery')),
-              onPressed: _wifiP2PManager.discovery,
+              onPressed: _flutterWifiP2p.discovery,
             ),
             RaisedButton(
               child: Center(child: Text('Open server')),
@@ -145,7 +155,7 @@ class _MyAppState extends State<MyApp> {
               child: Center(child: Text('Connect to server')),
               onPressed: () {
                 if (_isGroupFormed && !_isGroupOwner)
-                  _connectClient();
+                  _connectToServer();
                 else
                   return;
               },
@@ -162,23 +172,23 @@ class _MyAppState extends State<MyApp> {
             RaisedButton(
               child: Center(child: Text('Disconnect')),
               onPressed: () async {
-                if (_wifiP2pClient != null)
-                  await _wifiP2pClient.close();
-                if (_wifiP2pServer != null)
-                  await _wifiP2pServer.closeServer();
-                await _wifiP2PManager.removeGroup();
+                if (_clientSocket != null)
+                  await _clientSocket.close();
+                if (_serverSocket != null)
+                  await _serverSocket.close();
+                await _flutterWifiP2p.removeGroup();
               },
             ),
             Expanded(
               child: ListView(
-                children: _wifiP2pDevices.map((device) {
+                children: _listDevices.map((device) {
                   return Card(
                     child: ListTile(
                       title: Center(child: Text(device.name)),
                       subtitle: Center(child: Text(device.mac)),
                       onTap: () {
                         print("Connect to device: ${device.mac}");
-                        _wifiP2PManager.connect(device.mac);
+                        _flutterWifiP2p.connect(device.mac);
                       },
                     ),
                   );

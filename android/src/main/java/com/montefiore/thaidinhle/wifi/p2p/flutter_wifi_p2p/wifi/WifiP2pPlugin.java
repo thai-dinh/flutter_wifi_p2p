@@ -3,6 +3,7 @@ package com.montefiore.thaidinhle.wifi.p2p.flutter_wifi_p2p.wifi;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
+import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -22,21 +23,30 @@ import static android.os.Looper.getMainLooper;
 
 
 public class WifiP2pPlugin {
-    private static final String TAG = "[FlutterWifiP2P][WifiP2pPlugin]";
+    private static final String TAG = "[FlutterWifiP2P][WifiP2P]";
 
+    private boolean verbose;
+    private boolean registered;
     private Channel channel;
     private Context context;
     private WifiDirectBroadcastReceiver broadcastReceiver;
     private WifiP2pManager wifiP2pManager;
 
     public WifiP2pPlugin(Context context) {
+        this.verbose = false;
+        this.registered = false;
         this.context = context;
         this.wifiP2pManager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         this.channel = wifiP2pManager.initialize(context, getMainLooper(), null);
     }
 
+    public void setVerbose(boolean verbose) {
+        if (verbose) Log.d(TAG, "setVerbose()");
+        this.verbose = verbose;
+    }
+
     public void register(HashMap<String, EventSink> mapNameEventSink) {
-        Log.d(TAG, "register()");
+        if (verbose) Log.d(TAG, "register()");
 
         final IntentFilter intentFilter = new IntentFilter();
 
@@ -53,24 +63,32 @@ public class WifiP2pPlugin {
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
     
         broadcastReceiver = new WifiDirectBroadcastReceiver(channel, mapNameEventSink, wifiP2pManager);
+        broadcastReceiver.setVerbose(verbose);
 
         context.registerReceiver(broadcastReceiver, intentFilter);
+
+        registered = true;
     }
 
     public void unregister() {
-        context.unregisterReceiver(broadcastReceiver);
+        if (verbose) Log.d(TAG, "unregister()");
+
+        if (registered) {
+            context.unregisterReceiver(broadcastReceiver);
+            registered = false;
+        }
     }
 
     public void startDiscovery() {
         wifiP2pManager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Log.d(TAG, "startDiscovery(): success");
+                if (verbose) Log.d(TAG, "startDiscovery(): success");
             }
 
             @Override
             public void onFailure(int reasonCode) {
-                Log.d(TAG, "startDiscovery(): failure -> " + errorCode(reasonCode));
+                if (verbose) Log.d(TAG, "startDiscovery(): failure -> " + errorCode(reasonCode));
             }
         });
     }
@@ -79,12 +97,12 @@ public class WifiP2pPlugin {
         wifiP2pManager.stopPeerDiscovery(channel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Log.d(TAG, "stopDiscovery(): success");
+                if (verbose) Log.d(TAG, "stopDiscovery(): success");
             }
 
             @Override
             public void onFailure(int reason) {
-                Log.e(TAG, "stopDiscovery(): failure -> " + errorCode(reason));
+                if (verbose) Log.e(TAG, "stopDiscovery(): failure -> " + errorCode(reason));
             }
         });
     }
@@ -92,16 +110,17 @@ public class WifiP2pPlugin {
     public void connect(final String remoteAddress) {
         final WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = remoteAddress.toLowerCase();
+        config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(channel, config, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Log.d(TAG, "connect(): success");
+                if (verbose) Log.d(TAG, "connect(): success");
             }
 
             @Override
             public void onFailure(int reasonCode) {
-                Log.e(TAG, "connect(): failure -> " + errorCode(reasonCode));
+                if (verbose) Log.e(TAG, "connect(): failure -> " + errorCode(reasonCode));
             }
         });
     }
@@ -114,12 +133,12 @@ public class WifiP2pPlugin {
                     wifiP2pManager.removeGroup(channel, new WifiP2pManager.ActionListener() {
                         @Override
                         public void onSuccess() {
-                            Log.d(TAG, "removeGroup(): success");
+                            if (verbose) Log.d(TAG, "removeGroup(): success");
                         }
 
                         @Override
                         public void onFailure(int reason) {
-                            Log.e(TAG, "removeGroup(): failure -> " + errorCode(reason));
+                            if (verbose) Log.e(TAG, "removeGroup(): failure -> " + errorCode(reason));
                         }
                     });
                 }

@@ -21,8 +21,8 @@ import java.util.Map;
 
 
 public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
-  private static final String TAG = "[FlutterWifiP2P][FlutterWifiP2pPlugin]";
-  private static final String CHANNEL_NAME = "flutter.wifi.p2p/main.channel";
+  private static final String TAG = "[FlutterWifiP2P][Plugin]";
+  private static final String CHANNEL_NAME = "wifi.p2p/main";
 
   private BinaryMessenger messenger;
   private Context context;
@@ -50,20 +50,23 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
-      case "initialize":
-        wifiP2pPlugin.register(mapNameEventSink);
-        result.success(null);
+      case "setVerbose":
+        final boolean verbose = call.arguments();
+        wifiP2pPlugin.setVerbose(verbose);
         break;
-
+      case "register":
+        wifiP2pPlugin.register(mapNameEventSink);
+        break;
+      case "unregister":
+        wifiP2pPlugin.unregister();
+        break;
       case "discovery":
         wifiP2pPlugin.startDiscovery();
         break;
-
       case "connect":
         final String remoteAddress = call.arguments();
         wifiP2pPlugin.connect(remoteAddress);
         break;
-
       case "removeGroup":
         wifiP2pPlugin.removeGroup();
         break;
@@ -93,8 +96,7 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
     };
 
     final String[] channelNames = new String[] { 
-      "flutter.wifi.p2p/state", "flutter.wifi.p2p/peers", "flutter.wifi.p2p/connection", 
-      "flutter.wifi.p2p/this.device"
+      "wifi.p2p/state", "wifi.p2p/peers", "wifi.p2p/connection", "wifi.p2p/this.device"
     };
 
     for (int i = 0; i < channelIdentifiers.length; i++) {

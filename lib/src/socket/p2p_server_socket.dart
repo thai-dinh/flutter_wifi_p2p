@@ -3,8 +3,8 @@ import 'dart:collection';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_wifi_p2p/src/socket/isocket.dart';
+import 'package:meta/meta.dart';
 
 
 class P2pServerSocket implements ISocket {
@@ -26,6 +26,9 @@ class P2pServerSocket implements ISocket {
   String get address => _address;
 
   int get port => _port;
+
+  List<String> get activeConnection 
+    => _mapIpSocket.entries.map((e) => e.key).toList();
 
 /*-------------------------------Public methods-------------------------------*/
 

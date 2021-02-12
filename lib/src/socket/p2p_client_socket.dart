@@ -28,9 +28,9 @@ class P2pClientSocket implements ISocket {
     ).catchError((error) => throw error);
   }
 
-  void close() {
+  Future<void> close() async {
     if (_listenStreamSub != null)
-      _listenStreamSub.cancel();
+      await _listenStreamSub.cancel();
     if (_socket != null)
       _socket.destroy();
   }

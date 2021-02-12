@@ -6,25 +6,22 @@ import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_device.dart';
 import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_info.dart';
 
 
-class WifiP2PManager {
-  static const String _nameMain = 'flutter.wifi.p2p/main.channel';
-  static const String _nameWifiState = 'flutter.wifi.p2p/state';
-  static const String _nameDiscovery = 'flutter.wifi.p2p/peers';
-  static const String _nameConnection = 'flutter.wifi.p2p/connection';
-  static const String _nameChange = 'flutter.wifi.p2p/this.device';
-  static const MethodChannel _chMain = const MethodChannel(_nameMain);
-  static const EventChannel _chWifiState = const EventChannel(_nameWifiState);
-  static const EventChannel _chDiscovery = const EventChannel(_nameDiscovery);
-  static const EventChannel _chConnection = const EventChannel(_nameConnection);
-  static const EventChannel _chChange = const EventChannel(_nameChange);
+class FlutterWifiP2p {
+  static const MethodChannel _chMain = const MethodChannel('wifi.p2p/main');
+  static const EventChannel _chWifiState = const EventChannel('wifi.p2p/state');
+  static const EventChannel _chDiscovery = const EventChannel('wifi.p2p/peers');
+  static const EventChannel _chConnection = const EventChannel('wifi.p2p/connection');
+  static const EventChannel _chChange = const EventChannel('wifi.p2p/this.device');
 
-  WifiP2PManager();
+  FlutterWifiP2p();
 
 /*------------------------------Getters & Setters-----------------------------*/
 
-  Stream<WifiP2pDevice> get discoveryStream async* {
-    await for (Map map in _chDiscovery.receiveBroadcastStream()) {
-      yield WifiP2pDevice.fromMap(map);
+  Stream<List<WifiP2pDevice>> get discoveryStream async* {
+    await for (List list in _chDiscovery.receiveBroadcastStream()) {
+      List<WifiP2pDevice> listPeers = List.empty(growable: true);
+      list.forEach((map) => listPeers.add(WifiP2pDevice.fromMap(map)));
+      yield listPeers;
     }
   }
 
@@ -46,9 +43,13 @@ class WifiP2PManager {
     }
   }
 
+  set verbose(bool verbose) => _chMain.invokeMethod('setVerbose', verbose);
+
 /*-------------------------------Public methods-------------------------------*/
 
-  Future<void> initialize() async => await _chMain.invokeMethod('initialize');
+  Future<void> register() async => await _chMain.invokeMethod('register');
+
+  Future<void> unregister() async => await _chMain.invokeMethod('unregister');
 
   Future<void> discovery() async => await _chMain.invokeMethod('discovery');
 
