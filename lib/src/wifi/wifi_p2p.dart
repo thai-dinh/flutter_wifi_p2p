@@ -56,12 +56,10 @@ class FlutterWifiP2p {
   Future<void> unregister() async => await _chMain.invokeMethod('unregister');
 
   Future<void> discovery() async {
-    if (!permission && requested) {
+    if (!permission && requested)
       return;
-    } else if(!permission && !requested) {
+    if (!permission && !requested)
       await requestPermission();
-    }
-
     if (permission)
       _chMain.invokeMethod('discovery');
   }
@@ -90,6 +88,8 @@ class FlutterWifiP2p {
       PermissionStatus result = await Permission.locationWhenInUse.request();
       if (result.isGranted)
         permission = true;
+    } else if (status.isGranted) {
+      permission = true;
     }
 
     requested = true;
