@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_device.dart';
 import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_info.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class FlutterWifiP2p {
@@ -12,6 +13,9 @@ class FlutterWifiP2p {
   static const EventChannel _chDiscovery = const EventChannel('wifi.p2p/peers');
   static const EventChannel _chConnection = const EventChannel('wifi.p2p/connection');
   static const EventChannel _chChange = const EventChannel('wifi.p2p/this.device');
+
+  static bool permission = false;
+  static bool requested = false;
 
   FlutterWifiP2p();
 
@@ -51,7 +55,16 @@ class FlutterWifiP2p {
 
   Future<void> unregister() async => await _chMain.invokeMethod('unregister');
 
-  Future<void> discovery() async => await _chMain.invokeMethod('discovery');
+  Future<void> discovery() async {
+    if (!permission && requested) {
+      return;
+    } else if(!permission && !requested) {
+      await requestPermission();
+    }
+
+    if (permission)
+      await _chMain.invokeMethod('discovery');
+  }
 
   Future<void> connect(final String remoteAddress) async {
     await _chMain.invokeMethod('connect', remoteAddress);
@@ -67,5 +80,18 @@ class FlutterWifiP2p {
     }
 
     return ipAddress;
+  }
+
+/*------------------------------Private methods-------------------------------*/
+
+  Future<void> requestPermission() async {
+    PermissionStatus status = await Permission.locationWhenInUse.status;
+    if (status.isUndetermined) {
+      PermissionStatus result = await Permission.locationWhenInUse.request();
+      if (result.isGranted)
+        permission = true;
+    }
+
+    requested = true;
   }
 }
