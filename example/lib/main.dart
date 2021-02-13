@@ -122,6 +122,10 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             RaisedButton(
+              child: Center(child: Text('Mac Address')),
+              onPressed: () async => print(await _flutterWifiP2p.mac),
+            ),
+            RaisedButton(
               child: Center(child: Text('Register')),
               onPressed: _flutterWifiP2p.register,
             ),

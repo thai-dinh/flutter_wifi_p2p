@@ -54,6 +54,9 @@ public class FlutterWifiP2pPlugin implements FlutterPlugin, MethodCallHandler {
         final boolean verbose = call.arguments();
         wifiP2pPlugin.setVerbose(verbose);
         break;
+      case "getMacAddress":
+        result.success(wifiP2pPlugin.getMacAddress());
+        break;
       case "register":
         wifiP2pPlugin.register(mapNameEventSink);
         break;

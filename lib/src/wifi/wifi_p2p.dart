@@ -47,6 +47,11 @@ class FlutterWifiP2p {
     }
   }
 
+  Future<String> get mac async {
+    String _mac = await _chMain.invokeMethod('getMacAddress');
+    return _mac.toUpperCase();
+  }
+
   set verbose(bool verbose) => _chMain.invokeMethod('setVerbose', verbose);
 
 /*-------------------------------Public methods-------------------------------*/

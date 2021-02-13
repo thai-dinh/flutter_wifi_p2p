@@ -12,6 +12,10 @@ import android.util.Log;
 
 import io.flutter.plugin.common.EventChannel.EventSink;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -43,6 +47,35 @@ public class WifiP2pPlugin {
     public void setVerbose(boolean verbose) {
         if (verbose) Log.d(TAG, "setVerbose()");
         this.verbose = verbose;
+    }
+
+    public String getMacAddress() {
+        try {
+            ArrayList<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface networkInterface : networkInterfaces) {
+                Log.d(TAG, networkInterface.getName());
+
+               if (networkInterface.getName().compareTo("p2p-wlan0-0") == 0) {
+                byte[] mac = networkInterface.getHardwareAddress();
+                if (mac == null) {
+                    return "";
+                }
+
+                StringBuilder sb = new StringBuilder();
+                for (byte b : mac) {
+                    if (sb.length() > 0)
+                        sb.append(':');
+                    sb.append(String.format("%02x", b));
+                }
+
+                return sb.toString();
+               }
+            }
+        } catch (SocketException exception) {
+            if (verbose) Log.d(TAG, "Error while fetching MAC address" + exception.toString());
+        }
+
+        return "";
     }
 
     public void register(HashMap<String, EventSink> mapNameEventSink) {
