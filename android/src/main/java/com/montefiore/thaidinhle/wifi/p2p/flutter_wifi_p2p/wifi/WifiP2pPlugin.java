@@ -53,8 +53,6 @@ public class WifiP2pPlugin {
         try {
             ArrayList<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
             for (NetworkInterface networkInterface : networkInterfaces) {
-                Log.d(TAG, networkInterface.getName());
-
                if (networkInterface.getName().compareTo("p2p-wlan0-0") == 0) {
                 byte[] mac = networkInterface.getHardwareAddress();
                 if (mac == null) {
