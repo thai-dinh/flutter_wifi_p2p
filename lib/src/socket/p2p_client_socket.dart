@@ -35,9 +35,11 @@ class P2pClientSocket implements ISocket {
       _socket.destroy();
   }
 
-  void listen(void Function(Uint8List) onData) {
+  void listen(void Function(Uint8List) onData, {void Function() onDone}) {
     _listenStreamSub = _socket.listen(
-      onData, onError: (error) => throw error, onDone: () => close()
+      onData, 
+      onError: (error) => throw error, 
+      onDone: () async => (onDone != null) ? onDone() : await close()
     );
   }
 
