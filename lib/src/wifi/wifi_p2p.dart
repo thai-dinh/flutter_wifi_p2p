@@ -52,6 +52,16 @@ class FlutterWifiP2p {
     return _mac.toUpperCase();
   }
 
+  Future<String> get ownIp async {
+    String ipAddress = '';
+    for (NetworkInterface interface in await NetworkInterface.list()) {
+      if (interface.name.compareTo('p2p-wlan0-0') == 0)
+        ipAddress = interface.addresses.first.address;
+    }
+
+    return ipAddress;
+  }
+
   set verbose(bool verbose) => _chMain.invokeMethod('setVerbose', verbose);
 
 /*-------------------------------Public methods-------------------------------*/
@@ -74,16 +84,6 @@ class FlutterWifiP2p {
   }
 
   Future<void> removeGroup() async => await _chMain.invokeMethod('removeGroup');
-
-  Future<String> getOwnIp() async {
-    String ipAddress;
-    for (NetworkInterface interface in await NetworkInterface.list()) {
-      if (interface.name.compareTo('p2p-wlan0-0') == 0)
-        ipAddress = interface.addresses.first.address;
-    }
-
-    return ipAddress;
-  }
 
 /*------------------------------Private methods-------------------------------*/
 
