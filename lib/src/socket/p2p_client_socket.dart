@@ -24,7 +24,7 @@ class P2pClientSocket implements ISocket {
 
   Future<void> connect(int timeout) async {
     _socket = await Socket.connect(
-      _address, _port,timeout: Duration(milliseconds:  timeout)
+      _address, _port, timeout: Duration(milliseconds:  timeout)
     ).catchError((error) => throw error);
   }
 
@@ -35,10 +35,13 @@ class P2pClientSocket implements ISocket {
       _socket.destroy();
   }
 
-  void listen(void Function(Uint8List) onData, {void Function() onDone}) {
+  void listen(
+    void Function(Uint8List) onData,
+    {void Function(dynamic) onError, void Function() onDone}
+  ) {
     _listenStreamSub = _socket.listen(
-      onData, 
-      onError: (error) => throw error, 
+      onData,
+      onError: (error) => (onError != null) ? onError(error) : throw error,
       onDone: () async => (onDone != null) ? onDone() : await close()
     );
   }

@@ -37,14 +37,17 @@ class P2pServerSocket implements ISocket {
       .catchError((error) => throw error);
   }
 
-  void listen(void Function(Uint8List) onData, {void Function() onDone}) {
+  void listen(
+    void Function(Uint8List) onData, 
+    {void Function(dynamic) onError, void Function() onDone}
+  ) {
     _listenStreamSub = _serverSocket.listen(
       (socket) {
         String remoteAddress = socket.remoteAddress.address;
         _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
         _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
       },
-      onError: (error) => throw error,
+      onError: (error) => (onError != null) ? onError(error) : throw error,
       onDone: () async => (onDone != null) ? onDone() : await close()
     );
   }
