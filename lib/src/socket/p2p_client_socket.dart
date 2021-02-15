@@ -25,7 +25,7 @@ class P2pClientSocket implements ISocket {
   Future<void> connect(int timeout) async {
     _socket = await Socket.connect(
       _address, _port, timeout: Duration(milliseconds:  timeout)
-    ).catchError((error) => throw error);
+    );
   }
 
   Future<void> close() async {
@@ -33,21 +33,30 @@ class P2pClientSocket implements ISocket {
       await _listenStreamSub.cancel();
     if (_socket != null)
       _socket.destroy();
+
+    try {
+      await _socket.done;
+    } catch (error) {
+      print(error.toString());
+    }
   }
 
   void listen(
-    void Function(Uint8List) onData,
-    {void Function(dynamic) onError, void Function() onDone}
-  ) {
-    _listenStreamSub = _socket.listen(
-      onData,
-      onError: (error) => (onError != null) ? onError(error) : throw error,
+    void Function(Uint8List) onData, {void Function() onDone}
+  ) async {
+    _listenStreamSub = _socket.listen(onData,
       onDone: () async => (onDone != null) ? onDone() : await close()
     );
+
+    try {
+      await _socket.done;
+    } catch (error) {
+      print(error.toString());
+    }
   }
 
   void write(String message) {
     _socket.write(message);
-    _socket.flush().catchError((error) => throw error);
+    _socket.flush();
   }
 }

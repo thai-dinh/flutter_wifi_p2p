@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> {
 
   void _listen() {
     _flutterWifiP2p.verbose = true;
+    _flutterWifiP2p.register();
     _flutterWifiP2p.discoveryStream.listen(
       (devices) {
         devices.forEach(
@@ -55,7 +56,7 @@ class _MyAppState extends State<MyApp> {
           setState(() => _ownIp = _ownIp);
         } else {
           _groupOwnerIp = wifiP2pInfo.groupOwnerAddress;
-          _ownIp = await _flutterWifiP2p.getOwnIp();
+          _ownIp = await _flutterWifiP2p.ownIp;
           setState(() => _ownIp = _ownIp);
         }
       }
@@ -120,14 +121,6 @@ class _MyAppState extends State<MyApp> {
               child: ListTile(
                 title: Center(child: Text('Own IP: $_ownIp')),
               ),
-            ),
-            RaisedButton(
-              child: Center(child: Text('Mac Address')),
-              onPressed: () async => print(await _flutterWifiP2p.mac),
-            ),
-            RaisedButton(
-              child: Center(child: Text('Register')),
-              onPressed: _flutterWifiP2p.register,
             ),
             RaisedButton(
               child: Center(child: Text('Listen')),

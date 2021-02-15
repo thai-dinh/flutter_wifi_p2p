@@ -38,8 +38,7 @@ class P2pServerSocket implements ISocket {
   }
 
   void listen(
-    void Function(Uint8List) onData, 
-    {void Function(dynamic) onError, void Function() onDone}
+    void Function(Uint8List) onData, {void Function() onDone}
   ) {
     _listenStreamSub = _serverSocket.listen(
       (socket) {
@@ -47,30 +46,42 @@ class P2pServerSocket implements ISocket {
         _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
         _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
       },
-      onError: (error) => (onError != null) ? onError(error) : throw error,
       onDone: () async => (onDone != null) ? onDone() : await close()
     );
   }
 
   void write(String message, {@required String remoteAddress}) {
     _mapIpSocket[remoteAddress].write(message);
-    _mapIpSocket[remoteAddress].flush().catchError((error) => throw error);
+    _mapIpSocket[remoteAddress].flush();
   }
 
   Future<void> close() async {
     _mapIpStream.forEach((ip, stream) => stream.cancel());
     _mapIpStream.clear();
-    _mapIpSocket.forEach((ipAddress, socket) => socket.destroy());
+
+    _mapIpSocket.forEach((ipAddress, socket) async {
+      socket.destroy();
+      try {
+        await socket.done;
+      } catch (error) {
+        print(error.toString());
+      }
+    });
     _mapIpSocket.clear();
 
     await _listenStreamSub.cancel();
-    await _serverSocket.close().catchError((error) => throw error);
+    await _serverSocket.close();
   }
 
   Future<void> closeSocket(String remoteAddress) async {
     await _mapIpStream[remoteAddress].cancel();
     _mapIpStream.remove(remoteAddress);
     _mapIpSocket[remoteAddress].destroy();
+    try {
+      await _mapIpSocket[remoteAddress].done;
+    } catch (error) {
+      print(error.toString());
+    }
     _mapIpSocket.remove(remoteAddress);
   }
 }
