@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:collection';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_wifi_p2p/flutter_wifi_p2p.dart';
@@ -23,6 +28,12 @@ class _MyAppState extends State<MyApp> {
   bool _isGroupFormed = false;
   bool _isGroupOwner = false;
   int _port = 4444;
+
+  @override
+  void initState() {
+    super.initState();
+    _listen();
+  }
 
   void _listen() {
     _flutterWifiP2p.verbose = true;
@@ -123,10 +134,6 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             RaisedButton(
-              child: Center(child: Text('Listen')),
-              onPressed: _listen,
-            ),
-            RaisedButton(
               child: Center(child: Text('Discovery')),
               onPressed: _flutterWifiP2p.discovery,
             ),
@@ -196,5 +203,140 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+}
+
+class P2pClientSocket {
+  final String _address;
+  final int _port;
+
+  Socket _socket;
+  StreamSubscription<Uint8List> _listenStreamSub;
+
+  P2pClientSocket(this._address, this._port);
+
+/*------------------------------Getters & Setters-----------------------------*/
+
+  String get address => _address;
+
+  int get port => _port;
+
+/*-------------------------------Public methods-------------------------------*/
+
+  Future<void> connect(int timeout) async {
+    _socket = await Socket.connect(
+      _address, _port, timeout: Duration(milliseconds:  timeout)
+    );
+  }
+
+  Future<void> close() async {
+    if (_listenStreamSub != null)
+      await _listenStreamSub.cancel();
+    if (_socket != null)
+      _socket.destroy();
+
+    try {
+      await _socket.done;
+    } catch (error) {
+      print(error.toString());
+    }
+  }
+
+  void listen(
+    void Function(Uint8List) onData, {void Function() onDone}
+  ) async {
+    _listenStreamSub = _socket.listen(onData,
+      onDone: () async => (onDone != null) ? onDone() : await close()
+    );
+
+    try {
+      await _socket.done;
+    } catch (error) {
+      print(error.toString());
+    }
+  }
+
+  void write(String message) {
+    _socket.write(message);
+    _socket.flush();
+  }
+}
+
+class P2pServerSocket {
+  final String _address;
+  final int _port;
+
+  ServerSocket _serverSocket;
+  StreamSubscription<Socket> _listenStreamSub;
+  HashMap<String, StreamSubscription<Uint8List>> _mapIpStream;
+  HashMap<String, Socket> _mapIpSocket;
+
+  P2pServerSocket(this._address, this._port) {
+    _mapIpStream = HashMap();
+    _mapIpSocket = HashMap();
+  }
+
+/*------------------------------Getters & Setters-----------------------------*/
+
+  String get address => _address;
+
+  int get port => _port;
+
+  List<String> get activeConnection 
+    => _mapIpSocket.entries.map((e) => e.key).toList();
+
+/*-------------------------------Public methods-------------------------------*/
+
+  Future<void> openServer() async {
+    _serverSocket = await ServerSocket.bind(_address, _port, shared: true)
+      .catchError((error) => throw error);
+  }
+
+  void listen(
+    void Function(Uint8List) onData, {void Function() onDone}
+  ) {
+    _listenStreamSub = _serverSocket.listen(
+      (socket) {
+        String remoteAddress = socket.remoteAddress.address;
+        _mapIpSocket.putIfAbsent(remoteAddress, () => socket);
+        _mapIpStream.putIfAbsent(remoteAddress, () => socket.listen(onData));
+      },
+      onDone: () async => (onDone != null) ? onDone() : await close()
+    );
+  }
+
+  void write(String message, {@required String remoteAddress}) {
+    _mapIpSocket[remoteAddress].write(message);
+    _mapIpSocket[remoteAddress].flush();
+  }
+
+  Future<void> close() async {
+    _mapIpStream.forEach((ip, stream) => stream.cancel());
+    _mapIpStream.clear();
+
+    _mapIpSocket.forEach((ipAddress, socket) async {
+      socket.destroy();
+      try {
+        await socket.done;
+      } catch (error) {
+        print(error.toString());
+      }
+    });
+    _mapIpSocket.clear();
+
+    await _listenStreamSub.cancel();
+    await _serverSocket.close();
+  }
+
+  Future<void> closeSocket(String remoteAddress) async {
+    await _mapIpStream[remoteAddress].cancel();
+    _mapIpStream.remove(remoteAddress);
+    _mapIpSocket[remoteAddress].destroy();
+    try {
+      await _mapIpSocket[remoteAddress].done;
+    } catch (error) {
+      print(error.toString());
+    }
+    _mapIpSocket.remove(remoteAddress);
   }
 }

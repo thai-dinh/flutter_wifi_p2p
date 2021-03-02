@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_device.dart';
-import 'package:flutter_wifi_p2p/src/wifi/wifi_p2p_info.dart';
+import 'package:flutter_wifi_p2p/src/wifi_p2p_device.dart';
+import 'package:flutter_wifi_p2p/src/wifi_p2p_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 
